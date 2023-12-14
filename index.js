@@ -1,6 +1,7 @@
 const express = require("express");
 const app = express();
 const cors = require("cors");
+require('dotenv').config();
 const port = process.env.PORT || 5000;
 
 //middleware
@@ -9,7 +10,7 @@ app.use(express.json());
 
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const uri =
-  "mongodb+srv://QuickAdopt:QuickAdopt@cluster0.oykwxyb.mongodb.net/?retryWrites=true&w=majority";
+  `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.oykwxyb.mongodb.net/?retryWrites=true&w=majority`;
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
 const client = new MongoClient(uri, {
@@ -22,10 +23,13 @@ const client = new MongoClient(uri, {
 
 async function run() {
   try {
-    await client.connect();
+    // await client.connect();
     const AllPetCategoryCollection = await client
       .db("QuickAdopt")
       .collection("AllPetCategory");
+    const AllPetsCollection = await client
+      .db("QuickAdopt")
+      .collection("AllPets");
 
     app.get("/api/v1/allpetcategory", async (req, res) => {
       const cursor = AllPetCategoryCollection.find();
@@ -38,7 +42,19 @@ async function run() {
       const result = await AllPetCategoryCollection.findOne(query)
       res.send(result)
     })
-
+    //get all added pets
+    app.get('/api/v1/allpets', async(req, res) => {
+      const cursor = AllPetsCollection.find()
+      const result = await cursor.toArray()
+      res.send(result)
+    })
+    //send added pets to server
+    app.post('/api/v1/allpets', async (req,res) => {
+      const newAddedPets = req.body
+      console.log(newAddedPets);
+      const result = await AllPetsCollection.insertOne(newAddedPets)
+      res.send(result)
+    })
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
     console.log(
